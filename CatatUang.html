@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    
+    <link rel="manifest" href="manifest.json">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#121212">
+    
+    <title>Catat Uang</title>
+    
+    <style>
+        /* CSS Dark Mode Utama Total Hitam Pekat */
+        body { font-family: 'Segoe UI', Roboto, sans-serif; background: #121212; margin: 0; padding: 0; color: #ffffff; display: flex; justify-content: center; }
+        .container { width: 100%; max-width: 420px; min-height: 100vh; background: #1a1a1a; display: flex; flex-direction: column; box-shadow: 0 0 20px rgba(0,0,0,0.8); position: relative; box-sizing: border-box; }
+        .content-wrapper { display: flex; flex-direction: column; flex: 1; padding-bottom: 30px; }
+
+        /* Navigasi Atas */
+        .navbar { display: flex; background: #111111; color: #fff; padding: 5px 0; border-bottom: 2px solid #2d2d2d; }
+        .nav-item { flex: 1; text-align: center; padding: 14px; cursor: pointer; opacity: 0.5; border-bottom: 3px solid transparent; transition: all 0.2s ease; font-weight: 600; -webkit-tap-highlight-color: transparent; user-select: none; }
+        .nav-item.active { opacity: 1; color: #ff3333 !important; border-bottom: 3px solid #ff3333 !important; text-shadow: 0 0 8px rgba(255,51,51,0.5); }
+
+        /* Konten Halaman */
+        .page { padding: 20px; display: none; }
+        .page.active { display: block !important; }
+
+        /* Dashboard Saldo */
+        .dashboard-saldo { display: grid; grid-template-columns: 1fr; gap: 10px; margin-bottom: 15px; }
+        .saldo-box { background: #111111; border: 1px solid #ff3333; color: white; padding: 15px; border-radius: 12px; text-align: center; box-shadow: 0 4px 15px rgba(255,51,51,0.15); }
+        .saldo-main { font-size: 26px; font-weight: bold; color: #ffffff; margin-top: 5px; }
+        
+        .ewallet-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        .saldo-sub { background: #222222; border: 1px solid #333; padding: 10px; border-radius: 8px; text-align: center; font-size: 13px; }
+        .saldo-sub span { display: block; font-weight: bold; font-size: 15px; color: #ff3333; margin-top: 3px; }
+
+        /* Form Input */
+        label { font-size: 11px; color: #bbb; font-weight: bold; display: block; margin-top: 10px; text-transform: uppercase; }
+        input, select { width: 100%; padding: 12px; margin: 6px 0; border-radius: 8px; border: 1px solid #333; background: #262626; color: white; box-sizing: border-box; font-size: 14px; -webkit-tap-highlight-color: transparent; }
+        input:focus, select:focus { border-color: #ff3333; outline: none; }
+
+        /* Tombol Interaktif Utama */
+        button { width: 100%; padding: 14px; margin: 10px 0; border-radius: 8px; border: none; font-weight: bold; font-size: 14px; cursor: pointer; transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275); box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        .btn-primary { background: #ff3333; color: white; box-shadow: 0 4px 12px rgba(255,51,51,0.3); }
+        button:active { transform: scale(0.96) !important; }
+        
+        .btn-danger { background: transparent; color: #ff3333; border: 1px solid #ff3333; margin-top: 15px; }
+        
+        /* Riwayat */
+        .list-transaksi { margin-top: 15px; max-height: 180px; overflow-y: auto; background: #161616; border-radius: 8px; border: 1px solid #222; }
+        .item { padding: 12px; border-bottom: 1px solid #222; display: flex; justify-content: space-between; align-items: center; }
+        .item-info { display: flex; flex-direction: column; text-align: left; }
+        .item-acc { font-size: 11px; color: #888; margin-top: 2px; text-transform: uppercase; }
+        .pemasukan { color: #2ecc71; font-weight: bold; }
+        .pengeluaran { color: #ff3333; font-weight: bold; }
+
+        /* Celengan */
+        .celengan-card { background: #1c1c1c; border: 1px solid #2d2d2d; border-radius: 12px; padding: 15px; margin-top: 15px; text-align: center; }
+        .progress-bar-bg { background: #333; border-radius: 10px; height: 12px; overflow: hidden; margin: 12px 0; }
+        .progress-bar-fill { background: #ff3333; height: 100%; width: 0%; transition: width 0.8s ease; }
+        .estimasi-box { background: #262626; border-left: 4px solid #ff3333; padding: 12px; margin-top: 12px; font-size: 13px; text-align: left; }
+        .setor-box { background: #222222; border: 1px solid #333; padding: 15px; border-radius: 10px; margin-top: 15px; text-align: left; }
+
+        /* MODAL POP-UP TENGAH LAYAR */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 100; display: none; }
+        .custom-alert { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.8); background: #1a1a1a; border: 2px solid #ff3333; padding: 20px; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.9); z-index: 101; text-align: center; width: 280px; display: none; opacity: 0; transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275); box-sizing: border-box; }
+        .custom-alert.show { display: block !important; opacity: 1 !important; transform: translate(-50%, -50%) scale(1) !important; }
+        .custom-alert p { margin: 0 0 15px 0; font-weight: bold; font-size: 15px; color: #fff; line-height: 1.4; }
+        
+        .modal-buttons { display: flex; gap: 10px; justify-content: center; }
+        .modal-buttons button { margin: 0; padding: 10px; font-size: 13px; }
+        .btn-modal-ok { background: #ff3333; color: white; border-radius: 6px; }
+        .btn-modal-cancel { background: transparent; color: #aaa; border: 1px solid #444; border-radius: 6px; }
+
+        #fwCanvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 99; display: none; }
+    </style>
+</head>
+<body>
+
+<canvas id="fwCanvas"></canvas>
+<div id="modalOverlay" class="modal-overlay" onclick="closeModal()"></div>
+<div id="centerAlert" class="custom-alert">
+    <p id="alertText">Notifikasi</p>
+    <div class="modal-buttons" id="modalButtonsContainer"></div>
+</div>
+
+<div class="container" id="appContainer">
+    <div class="content-wrapper">
+        <div class="navbar">
+            <div class="nav-item active" id="tab1" onclick="switchPage('dompet', 'tab1')">💰 Dompet</div>
+            <div class="nav-item" id="tab2" onclick="switchPage('celengan', 'tab2')">🐷 Celengan</div>
+        </div>
+
+        <div id="page-dompet" class="page active">
+            <div class="dashboard-saldo">
+                <div class="saldo-box">
+                    <div style="font-size: 12px; color: #aaa;">SALDO AKTIF SIAP PAKAI</div>
+                    <div class="saldo-main" id="totalSaldo">Rp 0</div>
+                </div>
+                <div class="ewallet-grid">
+                    <div class="saldo-sub">💼 Cash<span id="saldoCash">Rp 0</span></div>
+                    <div class="saldo-sub">🔵 DANA<span id="saldoDana">Rp 0</span></div>
+                    <div class="saldo-sub">🟢 GOPAY<span id="saldoGopay">Rp 0</span></div>
+                    <div class="saldo-sub">📊 Transaksi<span id="countTransaksi">0</span></div>
+                </div>
+            </div>
+            
+            <label>Nominal Transaksi:</label>
+            <input type="number" id="jumlah" inputmode="numeric" placeholder="Rp 0">
+            <label>Keterangan:</label>
+            <input type="text" id="keterangan" placeholder="Keterangan">
+            
+            <label>Sumber Akun:</label>
+            <select id="akun">
+                <option value="cash">💼 Cash</option>
+                <option value="dana">🔵 DANA</option>
+                <option value="gopay">🟢 GOPAY</option>
+            </select>
+            
+            <label>Jenis:</label>
+            <select id="jenis">
+                <option value="pemasukan">Pemasukan (+)</option>
+                <option value="pengeluaran">Pengeluaran (-)</option>
+            </select>
+            <button class="btn-primary" onclick="tambahTransaksi()">Catat Transaksi</button>
+
+            <h3 style="font-size: 15px; border-left: 3px solid #ff3333; padding-left: 8px;">Riwayat</h3>
+            <div class="list-transaksi" id="riwayat"></div>
+            <button class="btn-danger" onclick="mintaKonfirmasi('Hapus semua riwayat transaksi?', resetRiwayatDompet)">⚠️ Bersihkan Semua Riwayat</button>
+        </div>
+
+        <div id="page-celengan" class="page">
+            <h3 style="font-size: 16px; border-left: 3px solid #ff3333; padding-left: 8px;">🎯 Target Celengan</h3>
+            
+            <div id="formSetTarget">
+                <input type="text" id="namaTarget" placeholder="Mau beli apa?">
+                <input type="number" id="nominalTarget" inputmode="numeric" placeholder="Target Harga (Rp)">
+                <input type="number" id="kemampuanNabung" inputmode="numeric" placeholder="Nabung per hari (Rp)">
+                <button class="btn-primary" onclick="simpanTarget()">Aktifkan Celengan</button>
+            </div>
+
+            <div id="displayCelengan" style="display: none;">
+                <div class="celengan-card">
+                    <h4 id="viewNama" style="font-size: 18px; margin: 5px 0;">Nama Target</h4>
+                    <div class="progress-bar-bg">
+                        <div id="viewProgress" class="progress-bar-fill"></div>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; font-size: 12px;">
+                        <span id="viewTerkumpul" style="color: #2ecc71;">Terkumpul: Rp 0</span>
+                        <span id="viewTotalTarget">Target: Rp 0</span>
+                    </div>
+                    <div class="estimasi-box" id="viewEstimasi">Estimasi tercapai: - hari lagi</div>
+                    
+                    <div class="setor-box">
+                        <h5 style="margin: 0 0 10px 0; color: #ff3333;">🐷 Setor Manual:</h5>
+                        <input type="number" id="nominalSetor" inputmode="numeric" placeholder="Nominal Setor (Rp)">
+                        <select id="sumberSetor">
+                            <option value="cash">💼 Cash</option>
+                            <option value="dana">🔵 DANA</option>
+                            <option value="gopay">🟢 GOPAY</option>
+                        </select>
+                        <button class="btn-primary" onclick="setorManualCelengan()">Masukin Celengan</button>
+                    </div>
+                    <button class="btn-danger" onclick="mintaKonfirmasi('Reset target celengan ini?', resetCelenganSaja)">❌ Reset Celengan</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let transaksi = JSON.parse(localStorage.getItem('dataKeuangan')) || [];
+    let targetTabungan = JSON.parse(localStorage.getItem('dataCelengan')) || null;
+    let akumulasiCelengan = parseInt(localStorage.getItem('saldoCelenganTerisi')) || 0;
+
+    const logoMap = { 'cash': '💼 ', 'dana': '🔵 ', 'gopay': '🟢 ' };
+
+    function tampilkanAlert(teks) {
+        document.getElementById('alertText').innerText = teks;
+        const container = document.getElementById('modalButtonsContainer');
+        container.innerHTML = `<button class="btn-modal-ok" onclick="closeModal()">Oke</button>`;
+        document.getElementById('modalOverlay').style.display = 'block';
+        document.getElementById('centerAlert').classList.add('show');
+    }
+
+    function mintaKonfirmasi(teks, aksiCallback) {
+        document.getElementById('alertText').innerText = teks;
+        const container = document.getElementById('modalButtonsContainer');
+        container.innerHTML = `
+            <button class="btn-modal-cancel" onclick="closeModal()">Batal</button>
+            <button class="btn-modal-ok" id="btnModalConfirmAction">Oke</button>
+        `;
+        document.getElementById('btnModalConfirmAction').onclick = function() {
+            closeModal();
+            aksiCallback();
+        };
+        document.getElementById('modalOverlay').style.display = 'block';
+        document.getElementById('centerAlert').classList.add('show');
+    }
+
+    function closeModal() {
+        document.getElementById('centerAlert').classList.remove('show');
+        document.getElementById('modalOverlay').style.display = 'none';
+    }
+
+    function switchPage(pageId, tabId) {
+        document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+        document.querySelectorAll('.nav-item').forEach(t => t.classList.remove('active'));
+        document.getElementById('page-' + pageId).classList.add('active');
+        document.getElementById(tabId).classList.add('active');
+        updateDOM(); 
+    }
+
+    function getSaldoPerAkun() {
+        let cash = 0, dana = 0, gopay = 0;
+        transaksi.forEach(item => {
+            if (item.jenis === 'pemasukan') {
+                if (item.akun === 'cash') cash += item.jumlah;
+                if (item.akun === 'dana') dana += item.jumlah;
+                if (item.akun === 'gopay') gopay += item.jumlah;
+            } else {
+                if (item.akun === 'cash') cash -= item.jumlah;
+                if (item.akun === 'dana') dana -= item.jumlah;
+                if (item.akun === 'gopay') gopay -= item.jumlah;
+            }
+        });
+        return { cash, dana, gopay, total: cash + dana + gopay };
+    }
+
+    function updateDOM() {
+        const riwayatEl = document.getElementById('riwayat');
+        riwayatEl.innerHTML = '';
+        const saldos = getSaldoPerAkun();
+        [...transaksi].reverse().forEach((item) => {
+            const tanda = item.jenis === 'pemasukan' ? '+' : '-';
+            const kelas = item.jenis === 'pemasukan' ? 'pemasukan' : 'pengeluaran';
+            const emojiAkun = logoMap[item.akun] || '';
+            riwayatEl.innerHTML += `<div class="item"><div class="item-info"><span>${item.keterangan}</span><span class="item-acc">📍 via ${emojiAkun}${item.akun.toUpperCase()}</span></div><span class="${kelas}">${tanda} Rp ${item.jumlah.toLocaleString()}</span></div>`;
+        });
+        document.getElementById('totalSaldo').innerText = `Rp ${saldos.total.toLocaleString()}`;
+        document.getElementById('saldoCash').innerText = `Rp ${saldos.cash.toLocaleString()}`;
+        document.getElementById('saldoDana').innerText = `Rp ${saldos.dana.toLocaleString()}`;
+        document.getElementById('saldoGopay').innerText = `Rp ${saldos.gopay.toLocaleString()}`;
+        document.getElementById('countTransaksi').innerText = transaksi.length;
+        localStorage.setItem('dataKeuangan', JSON.stringify(transaksi));
+        localStorage.setItem('saldoCelenganTerisi', akumulasiCelengan);
+
+        if (targetTabungan) {
+            document.getElementById('formSetTarget').style.display = 'none';
+            document.getElementById('displayCelengan').style.display = 'block';
+            document.getElementById('viewNama').innerText = targetTabungan.nama;
+            document.getElementById('viewTotalTarget').innerText = `Target: Rp ${targetTabungan.nominal.toLocaleString()}`;
+            let visualTerkumpul = Math.min(akumulasiCelengan, targetTabungan.nominal);
+            document.getElementById('viewTerkumpul').innerText = `Terkumpul: Rp ${visualTerkumpul.toLocaleString()}`;
+            document.getElementById('viewProgress').style.width = `${(visualTerkumpul / targetTabungan.nominal) * 100}%`;
+            if (akumulasiCelengan >= targetTabungan.nominal) document.getElementById('viewEstimasi').innerHTML = "🎉 Lunas Ko! Target tabungan tercapai!";
+            else document.getElementById('viewEstimasi').innerHTML = `⏳ Estimasi: ${Math.ceil((targetTabungan.nominal - akumulasiCelengan) / targetTabungan.harian)} hari lagi.`;
+        } else {
+            document.getElementById('formSetTarget').style.display = 'block';
+            document.getElementById('displayCelengan').style.display = 'none';
+        }
+    }
+
+    function tambahTransaksi() {
+        const jumlah = parseInt(document.getElementById('jumlah').value);
+        const keterangan = document.getElementById('keterangan').value;
+        if (!jumlah || !keterangan || jumlah <= 0) { tampilkanAlert('Isi nominal dan keterangan dulu!'); return; }
+        transaksi.push({ jumlah, keterangan, akun: document.getElementById('akun').value, jenis: document.getElementById('jenis').value });
+        updateDOM();
+        document.getElementById('jumlah').value = '';
+        document.getElementById('keterangan').value = '';
+        tampilkanAlert('Transaksi dicatat!');
+    }
+
+    function setorManualCelengan() {
+        if (!targetTabungan) { tampilkanAlert('Aktifkan target dulu!'); return; }
+        const nominal = parseInt(document.getElementById('nominalSetor').value);
+        const akun = document.getElementById('sumberSetor').value;
+        const saldo = getSaldoPerAkun();
+        if (nominal > saldo[akun]) { tampilkanAlert('Saldo tidak cukup!'); return; }
+        transaksi.push({ jumlah: nominal, keterangan: `Setor: [${targetTabungan.nama}]`, akun, jenis: 'pengeluaran' });
+        akumulasiCelengan += nominal;
+        if (akumulasiCelengan >= targetTabungan.nominal) initFireworks();
+        updateDOM();
+        tampilkanAlert('Berhasil masuk celengan!');
+    }
+
+    function simpanTarget() {
+        const nama = document.getElementById('namaTarget').value;
+        const nominal = parseInt(document.getElementById('nominalTarget').value);
+        const harian = parseInt(document.getElementById('kemampuanNabung').value);
+        if (!nama || !nominal || !harian) { tampilkanAlert('Lengkapi semua data!'); return; }
+        targetTabungan = { nama, nominal, harian };
+        localStorage.setItem('dataCelengan', JSON.stringify(targetTabungan));
+        updateDOM();
+    }
+
+    function resetCelenganSaja() { targetTabungan = null; akumulasiCelengan = 0; localStorage.removeItem('dataCelengan'); localStorage.removeItem('saldoCelenganTerisi'); updateDOM(); }
+    function resetRiwayatDompet() { transaksi = []; akumulasiCelengan = 0; localStorage.removeItem('dataKeuangan'); localStorage.removeItem('saldoCelenganTerisi'); updateDOM(); }
+
+    const canvas = document.getElementById('fwCanvas');
+    const ctx = canvas.getContext('2d');
+    let particles = [];
+    function initFireworks() { canvas.style.display = 'block'; canvas.width = window.innerWidth; canvas.height = window.innerHeight; for (let i = 0; i < 4; i++) setTimeout(() => { for (let j = 0; j < 35; j++) { const angle = Math.random() * Math.PI * 2; const speed = Math.random() * 3 + 2; particles.push({ x: Math.random() * canvas.width, y: Math.random() * (canvas.height * 0.4), vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed, alpha: 1, color: ['#ff3333', '#ffffff'][Math.floor(Math.random() * 2)] }); } }, i * 300); animate(); }
+    function animate() { if (particles.length === 0) { canvas.style.display = 'none'; return; } ctx.fillStyle = 'rgba(18, 18, 18, 0.2)'; ctx.fillRect(0, 0, canvas.width, canvas.height); particles.forEach((p, i) => { p.x += p.vx; p.y += p.vy; p.vy += 0.05; p.alpha -= 0.02; ctx.globalAlpha = p.alpha; ctx.fillStyle = p.color; ctx.beginPath(); ctx.arc(p.x, p.y, 2, 0, Math.PI * 2); ctx.fill(); if (p.alpha <= 0) particles.splice(i, 1); }); requestAnimationFrame(animate); }
+    updateDOM();
+</script>
+</body>
+</html>
